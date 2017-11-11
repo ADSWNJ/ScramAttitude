@@ -1,0 +1,111 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{4D7AAB28-3A8E-4C2D-BBA5-3EE678E16079}</ProjectGuid>
+    <RootNamespace>ScramAttitude</RootNamespace>
+    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v140</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v140</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="..\..\..\Orbiter2016\Orbitersdk\resources\Orbiter plugin.props" />
+    <Import Project="..\..\..\Orbiter2016\Orbitersdk\resources\Orbiter debug.props" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="..\..\..\Orbiter2016\Orbitersdk\resources\Orbiter plugin.props" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
+    <RunCodeAnalysis>true</RunCodeAnalysis>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>true</SDLCheck>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <BufferSecurityCheck>true</BufferSecurityCheck>
+      <EnablePREfast>true</EnablePREfast>
+    </ClCompile>
+    <Link>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="DisplayEngUnitFunctions.cpp" />
+    <ClCompile Include="MFDPersist.cpp" />
+    <ClCompile Include="ParseFunctions.cpp" />
+    <ClCompile Include="ScramAttitude.cpp" />
+    <ClCompile Include="ScramAttitude_ButtonHandling.cpp" />
+    <ClCompile Include="ScramAttitude_Buttons.cpp" />
+    <ClCompile Include="ScramAttitude_GCore.cpp" />
+    <ClCompile Include="ScramAttitude_Interface.cpp" />
+    <ClCompile Include="ScramAttitude_LCore.cpp" />
+    <ClCompile Include="ScramAttitude_MFDUpdate.cpp" />
+    <ClCompile Include="ScramAttitude_SketchpadFunctions.cpp" />
+    <ClCompile Include="ScramAttitude_VCore.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="DisplayEngUnitFunctions.h" />
+    <ClInclude Include="MFDButtonPage.hpp" />
+    <ClInclude Include="MFDPersist.hpp" />
+    <ClInclude Include="ParseFunctions.h" />
+    <ClInclude Include="ScramAttitude.hpp" />
+    <ClInclude Include="ScramAttitude_Buttons.hpp" />
+    <ClInclude Include="ScramAttitude_GCore.hpp" />
+    <ClInclude Include="ScramAttitude_Interface.hpp" />
+    <ClInclude Include="ScramAttitude_LCore.hpp" />
+    <ClInclude Include="ScramAttitude_VCore.hpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include=".gitignore" />
+    <None Include="A_Fuzzy_Logic_Supervisor_for_PD_Control_of_Unknown_Systems.pdf" />
+    <None Include="ScramAttitude.docx" />
+    <None Include="ScramAttitude.pdf" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="gpl-3_0.txt" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>
