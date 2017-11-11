@@ -99,6 +99,7 @@
   <ItemGroup>
     <None Include=".gitignore" />
     <None Include="A_Fuzzy_Logic_Supervisor_for_PD_Control_of_Unknown_Systems.pdf" />
+    <None Include="README.md" />
     <None Include="ScramAttitude.docx" />
     <None Include="ScramAttitude.pdf" />
   </ItemGroup>
