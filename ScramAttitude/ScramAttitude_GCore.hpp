@@ -16,9 +16,6 @@
 #include "orbitersdk.h"
 #include "ScramAttitude_Buttons.hpp"
 #include "MFDPersist.hpp"
-#include <EnjoLib/ModuleMessagingExtBase.hpp>
-#include <EnjoLib/ModuleMessagingExtPut.hpp>
-#include <EnjoLib/ModuleMessagingExt.hpp>
 using namespace std;
 
 #ifndef _SCRAM_ATT_GCORE_H
