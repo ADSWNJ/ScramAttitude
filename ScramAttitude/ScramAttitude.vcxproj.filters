@@ -100,7 +100,7 @@
     <None Include=".gitignore">
       <Filter>Misc</Filter>
     </None>
-    <None Include="README.md">
+    <None Include="..\README.md">
       <Filter>Misc</Filter>
     </None>
   </ItemGroup>
