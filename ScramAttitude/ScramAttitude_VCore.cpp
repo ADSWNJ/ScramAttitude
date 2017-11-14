@@ -29,7 +29,7 @@ ScramAttitude_VCore::ScramAttitude_VCore(VESSEL *vin, ScramAttitude_GCore* gcin)
   }
   maxMach = mach = v->GetMachNumber();
   startSumAbsErr = lastSumAbsErr = oapiGetSimTime();
-  dumpMW();
+  //dumpMW();
 
   for (int r = 0; r < 10; r++) {
     for (int c = 0; c < 10; c++) {
