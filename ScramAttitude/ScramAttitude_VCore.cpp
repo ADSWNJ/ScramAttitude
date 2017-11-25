@@ -22,6 +22,10 @@ ScramAttitude_VCore::ScramAttitude_VCore(VESSEL *vin, ScramAttitude_GCore* gcin)
 	// Vessel core constructor
   GC = gcin;
 	v = vin;
+  strcpy_s(clName, 128, v->GetClassName());
+
+  char buf[256];
+
   for (int i = 0; i < MAX_HIST; i++) {
     simT_hist[i] = 0.0;
     alt_hist[i] = v->GetAltitude();
@@ -31,12 +35,19 @@ ScramAttitude_VCore::ScramAttitude_VCore(VESSEL *vin, ScramAttitude_GCore* gcin)
   startSumAbsErr = lastSumAbsErr = oapiGetSimTime();
   //dumpMW();
 
+  if (!GetVesselClassControlSettings()) { // validate the info is there
+    sprintf_s(buf, 256, "   >>> %s module could not load ref settings for vessel class %s; using defaults", GC->moduleName, clName);
+    oapiWriteLog(buf);
+  }
+
   for (int r = 0; r < 10; r++) {
     for (int c = 0; c < 10; c++) {
       MW_ControlTable[r][c] = MW_DesiredVAccTable[MW_ControlStateTable[r][c] + 4];
     }
   }
-
+  histIx = 0;
+  histOld = 1;
+  histMid = (reqHist + 1) / 2 ;
   return;
 };
 
@@ -47,9 +58,12 @@ ScramAttitude_VCore::~ScramAttitude_VCore() {
 
 void ScramAttitude_VCore::corePreStep(double p_simT,double p_simDT,double p_mjd) {
 
-  simT = p_simT;
-  simDT = p_simDT;
   mjd = p_mjd;
+  simT = p_simT;
+  simDT = simT - lastSimT;
+  if (simDT < minSimD) return; // Don't run too aggressively
+
+  lastSimT = simT;
 
   TAS = v->GetAirspeed();
   mach = v->GetMachNumber();
@@ -68,10 +82,10 @@ void ScramAttitude_VCore::corePreStep(double p_simT,double p_simDT,double p_mjd)
   DP_hist[histIx] = DP;
   simT_hist[histIx] = simT;
 
-  if (simT_hist[MAX_HIST - 1] == 0.0) {
-    histIx = (histIx + 1) % MAX_HIST;
-    histOld = (histOld + 1) % MAX_HIST;
-    histMid = (histMid + 1) % MAX_HIST;
+  if (simT_hist[reqHist - 1] == 0.0) {
+    histIx = (histIx + 1) % reqHist;
+    histOld = (histOld + 1) % reqHist;
+    histMid = (histMid + 1) % reqHist;
     return; // Want to populate the history buffer before doing any control activity
   }
 
@@ -81,10 +95,10 @@ void ScramAttitude_VCore::corePreStep(double p_simT,double p_simDT,double p_mjd)
   DPSpdAvg = 0.0;
   DPAccAvg = 0.0;
 
-  for (int i = 0; i < MAX_HIST; i++) {
+  for (int i = 0; i < reqHist; i++) {
     altAvg += alt_hist[i];
   }
-  altAvg /= (double) MAX_HIST;
+  altAvg /= (double) reqHist;
    
   double vSpdH1 = (alt_hist[histMid] - alt_hist[histOld]) / (simT_hist[histMid] - simT_hist[histOld]);
   double vSpdH2 = (alt_hist[histIx] - alt_hist[histMid]) / (simT_hist[histIx] - simT_hist[histMid]);
@@ -100,9 +114,9 @@ void ScramAttitude_VCore::corePreStep(double p_simT,double p_simDT,double p_mjd)
   DPAccAvg = (DPSpdH2 - DPSpdH1) / (simTH2 - simTH1);
   DPSpdAvg = (DP_hist[histIx] - DP_hist[histOld]) / (simT_hist[histIx] - simT_hist[histOld]);
 
-  histIx = (histIx + 1) % MAX_HIST;
-  histOld = (histOld + 1) % MAX_HIST;
-  histMid = (histMid + 1) % MAX_HIST;
+  histIx = (histIx + 1) % reqHist;
+  histOld = (histOld + 1) % reqHist;
+  histMid = (histMid + 1) % reqHist;
 
 #define fwd_s (2.0 * a)
   DPDelta = DP + DPSpdAvg * fwd_s + 0.5 * DPAccAvg * fwd_s * fwd_s - DPTgt;  /// Predict DP delta in 'fwd' secs
@@ -229,7 +243,7 @@ void ScramAttitude_VCore::logError(errno_t err, const char *fmt...) {
   char fmtBuf[256];
   char buf2[256];
   
-  sprintf_s(buf1, "   >>> ScramAltitude: Error %d (%s) ", err, strerror(err));
+  sprintf_s(buf1, "   >>> %s: Error %d (%s) ", GC->moduleName, err, strerror(err));
   sprintf_s(fmtBuf, 256, "%s%s", buf1, fmt);
   va_list args;
   va_start(args, fmt);
@@ -247,7 +261,7 @@ void ScramAttitude_VCore::logError(const char *fmt...) {
   char fmtBuf[256];
   char buf2[256];
 
-  sprintf_s(buf1, "   >>> ScramAltitude: Error ");
+  sprintf_s(buf1, "   >>> %s: Error ", GC->moduleName);
   sprintf_s(fmtBuf, 256, "%s%s", buf1, fmt);
   va_list args;
   va_start(args, fmt);
@@ -355,4 +369,108 @@ double ScramAttitude_VCore::Macvicar_Whelan_Fuzzy_Function(double E, double dE) 
   MW_RESP = (MW_w0 * MW_v0 + MW_w1 * MW_v1 + MW_w2 * MW_v2 + MW_w3 * MW_v3) / (MW_w0 + MW_w1 + MW_w2 + MW_w3);
 
   return MW_RESP; 
+}
+
+bool ScramAttitude_VCore::GetVesselClassControlSettings() {
+
+  FILE* rf;
+  char buf[256];
+  int tokItem;
+  char *tok;
+  char *bp;
+  double itemValueArray[4][16];
+
+  int lineNo = 0;
+  bool parseValid = false;
+  bool inVesselClass = false;
+  bool inOurVesselClass = false;
+  unsigned short foundItem{ 0 };
+
+  const char *tokList[] = { "SEG_E_CTL", "SEG_DE_CTL", "DES_VACC_CTL", "TRIM_CTL", "HIST_COUNT", "MIN_SIMD" , "BEGIN_VESSEL_CLASS", "END_VESSEL_CLASS" };
+  const int itemValueCount[4] = { 16, 16, 9, 10 };
+  int itemHistCount{ 0 };
+  double itemMinSimD{ 0.0 };
+
+
+  const char VesselParamsFile[] = ".\\Config\\MFD\\ScramAttitude\\ScramAttitude_VesselParams.cfg";
+
+  try {
+    if (fopen_s(&rf, VesselParamsFile, "r")) throw ParseException("could not open file");
+
+    while (fgets(buf, 255, rf) != NULL) {
+      lineNo++;
+      bp = buf;
+      if (!ParseWhiteSpace(&bp)) continue;
+      ParseStringFomList(&bp, &tokItem, tokList, 8, true);
+      foundItem |= 1 << tokItem;
+      switch (tokItem) {
+      case 0: // SEG_E_CTL
+      case 1: // SEG_DE_CTL
+      case 2: // DES_VACC_CTL
+      case 3: // TRIM_CTL
+        if (!inVesselClass) throw ParseException("%s must be inside a BEGIN_VESSEL_CLASS block", tokList[tokItem]);
+        if (!inOurVesselClass) continue;
+        ParseJustDoubleArray(&bp, itemValueArray[tokItem], itemValueCount[tokItem], true);
+        continue;
+      case 4: // HIST_COUNT
+        ParseInt(&bp, &itemHistCount, true);
+        if (itemHistCount < 3 || itemHistCount > MAX_HIST) throw ParseException("%s range error: must be between 3 and %d", tokList[tokItem], MAX_HIST);
+        continue;
+      case 5: // MIN_SIMD
+        ParseDouble(&bp, &itemMinSimD, true);
+        if (itemMinSimD < 0.0 || itemMinSimD > 2.0) throw ParseException("%s range error: must be between 0.0 and 2.0", tokList[tokItem]);
+        continue;
+      case 6: // BEGIN_VESSEL_CLASS
+        if (inVesselClass) throw ParseException("missing END_VESSEL_CLASS");
+        inVesselClass = true;
+        ParseQuotedString(&bp, &tok, true);
+        if (!_stricmp(tok, clName)) inOurVesselClass = true;
+        if (ParseWhiteSpace(&bp)) throw ParseException("extra data found on end of line");
+        continue;
+      case 7: // END_VESSEL_CLASS
+        if (ParseWhiteSpace(&bp)) throw ParseException("extra data found on end of line");
+        if (!inVesselClass) throw ParseException("missing BEGIN_VESSEL_CLASS");
+        if (inOurVesselClass) {
+          if (foundItem == 0xFF) {
+            parseValid = true;
+            break; // parsed our class, and all 8 control lined found ... so now break from the file read
+          } else {
+            throw ParseException("Missing settings in vessel definition");
+          }
+        }
+        inVesselClass = inOurVesselClass = false;
+        foundItem = 0;
+        continue;
+      }
+      if (parseValid) break;
+    }
+  }
+  catch (ParseException& e) {
+    sprintf_s(buf, 256, "   >>> %s module parse error in %s, line %i: %s", GC->moduleName, VesselParamsFile, lineNo, e.getMsg());
+    oapiWriteLog(buf);
+  };
+
+  if (rf != nullptr) fclose(rf);
+
+  if (parseValid) {
+    for (int i = 0, j=0; j < 8; j++) {
+      MW_SegmentationTableE[j].start = itemValueArray[0][i];
+      MW_SegmentationTableDE[j].start = itemValueArray[1][i++];
+      MW_SegmentationTableE[j].end = itemValueArray[0][i];
+      MW_SegmentationTableDE[j].end = itemValueArray[1][i++];
+    }
+    for (int i = 0; i < 9; i++) {
+      MW_DesiredVAccTable[i] = itemValueArray[2][i];
+    }
+    for (int i = 0, j = 0; i < 5; i++) {
+      trim_ControlTable[i][0] = itemValueArray[3][j++];
+      trim_ControlTable[i][1] = itemValueArray[3][j++];
+    }
+    reqHist = itemHistCount;
+    minSimD = itemMinSimD;
+
+    sprintf_s(buf, 256, "   >>> %s module loaded vessel class %s settings from %s", GC->moduleName, clName, VesselParamsFile);
+    oapiWriteLog(buf);
+  }
+  return parseValid;
 }

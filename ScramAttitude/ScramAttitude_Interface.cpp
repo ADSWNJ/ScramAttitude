@@ -19,9 +19,9 @@ ScramAttitude_Interface *g_OrbIF = nullptr;
 extern ScramAttitude_GCore *g_SC;    // points to the static persistence core
 
 static int g_MFDmode;			// holds the mode identifier for our MFD
-static char *name = "ScramAttitude";
-static char *version = "1.0";
-static char *compdate = __DATE__;
+extern char *g_moduleName;
+extern char *g_moduleVersion;
+extern char *g_moduleCompileDate;
 
 // ====================================================================================================================
 // Orbiter API interface 
@@ -34,14 +34,14 @@ DLLCLBK void InitModule (HINSTANCE hDLL)
   g_OrbIF = new ScramAttitude_Interface(hDLL);
   g_SC = nullptr;
   MFDMODESPECEX spec;
-  spec.name = name;
+  spec.name = g_moduleName;
   spec.key = OAPI_KEY_S;
   spec.context = NULL;
   spec.msgproc = ScramAttitude_Interface::MsgProc;
   g_MFDmode = oapiRegisterMFDMode (spec);
   oapiRegisterModule(g_OrbIF);
   char buf[128];
-  sprintf(buf, "   >>> %s module initialized: version %s, compile date %s", name, version, compdate);
+  sprintf(buf, "   >>> %s module initialized: version %s, compile date %s", g_moduleName, g_moduleVersion, g_moduleCompileDate);
   oapiWriteLog(buf);
 }
 
@@ -51,7 +51,7 @@ DLLCLBK void InitModule (HINSTANCE hDLL)
 DLLCLBK void ExitModule (HINSTANCE hDLL)
 {
   char buf[128];
-  sprintf(buf, "   >>> %s module exited", name);
+  sprintf(buf, "   >>> %s module exited", g_moduleName);
   oapiWriteLog(buf);
   oapiUnregisterMFDMode (g_MFDmode);
 }
@@ -76,7 +76,7 @@ ScramAttitude_Interface::~ScramAttitude_Interface() {}
  */
 void ScramAttitude_Interface::clbkSimulationStart(RenderMode mode) {
   char buf[128];
-  sprintf(buf, "   >>> %s module sim start", name);
+  sprintf(buf, "   >>> %s module sim start", g_moduleName);
   oapiWriteLog(buf);
 }
 
@@ -89,7 +89,7 @@ void ScramAttitude_Interface::clbkSimulationEnd() {                             
     g_SC->P.delVC(nullptr);
   }
   char buf[128];
-  sprintf(buf, "   >>> %s module sim end", name);
+  sprintf(buf, "   >>> %s module sim end", g_moduleName);
   oapiWriteLog(buf);
   return;
 }

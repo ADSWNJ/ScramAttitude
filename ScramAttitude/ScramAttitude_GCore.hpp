@@ -34,6 +34,7 @@ class ScramAttitude_GCore {
     ScramAttitude_GCore();
     ~ScramAttitude_GCore();
     MFDPersist P;
+    char moduleName[32];
 
   private:
     double coreSimT{ 0.0 };

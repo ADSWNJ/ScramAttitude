@@ -36,26 +36,31 @@ class ScramAttitude_VCore {
     ~ScramAttitude_VCore();
     ScramAttitude_GCore* GC;
 
+
+		// Add Vessel data here
+    VESSEL *v;
+    int vix; // Vessel index in LU
+    char clName[128];
+
     // Logging Control
     void dumpMW();
     void logOpen();
     void logWrite();
     void logClose();
-    void logError(errno_t err, const char *fmt...); 
+    void logError(errno_t err, const char *fmt...);
     void logError(const char *fmt...);
 
-		// Add Vessel data here
-    VESSEL *v;
-    int vix; // Vessel index in LU
-
     // Calculate position, velocity, acceleration trends. Always make MAX_HIST odd, to have a defined middle value    
-#define MAX_HIST 11
+#define MAX_HIST 127
     double simT_hist[MAX_HIST];                  
     double alt_hist[MAX_HIST];
     double DP_hist[MAX_HIST];
     int histIx{ 0 };
     int histOld{ 1 };
     int histMid{ (MAX_HIST + 1) / 2 };
+
+    int reqHist{ MAX_HIST };
+    double minSimD{ 0.1 };
 
     // Averages from history calculations
     double altAvg;
@@ -67,6 +72,7 @@ class ScramAttitude_VCore {
     double mjd;
     double simT; 
     double simDT;
+    double lastSimT{ 0.0 };
 
     bool showDiags{ false };
 
@@ -204,6 +210,7 @@ class ScramAttitude_VCore {
     double Macvicar_Whelan_dErr_Function(double dE);
     double Macvicar_Whelan_Fuzzy_Function(double E, double dE);
 
+    bool GetVesselClassControlSettings();
 
 };
 

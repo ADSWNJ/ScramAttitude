@@ -36,13 +36,14 @@ bool ScramAttitude::Update(oapi::Sketchpad *skp)
   if (VC->apState > 0) skpFormatText(4, l, "%+7.2f", VC->vAccTgt);
   l++;
   skpFormatText(0, l, "Elev:");
-  skpFormatText(2, l, "%+7.2f", VC->trim);
   if (VC->apState > 0) {
-    if (VC->trimTgt == -1.0 || VC->trimTgt == 1.0) {
+    if ((VC->trimTgt == -1.0 && VC->trim < -0.99) || (VC->trimTgt == 1.0 && VC->trim > 0.99)) {
       skpColor(CLR_YELLOW);
+      skpFormatText(2, l, "%+7.2f", VC->trim);
       skpFormatText(4, l, "%+7.2f ***", VC->trimTgt);
       skpColor(CLR_WHITE);
     } else {
+      skpFormatText(2, l, "%+7.2f", VC->trim);
       skpFormatText(4, l, "%+7.2f", VC->trimTgt);
     }
   }
@@ -98,6 +99,17 @@ bool ScramAttitude::Update(oapi::Sketchpad *skp)
 
   if (VC->MW_diag == 1 && VC->apState == 1 && VC->showDiags) {
     l++;
+    double w0{ VC->MW_w0 };
+    double w1{ VC->MW_w1 };
+    double w2{ VC->MW_w2 };
+    double w3{ VC->MW_w3 };
+    if ((VC->MW_DE0 == VC->MW_DE0 + 1) && (w0 + w2 == 100.0)) {
+      w1 = w0 / 2.0;
+      w3 = w2 / 2.0;
+      w0 = w1;
+      w2 = w3; // internally, it's 100% to the first DE rate, but more visually pleasing to show as 50% 50% for the same 2 lines
+    }
+
     // Display MW matrix and output
     skpFormatText(0, l, "DE\\E");
     skpFormatText(1, l, " %s", VC->MW_desc[VC->MW_E0]);
@@ -106,14 +118,14 @@ bool ScramAttitude::Update(oapi::Sketchpad *skp)
     skpFormatText(0, l, "%s", VC->MW_desc[VC->MW_DE0]);
     skpFormatText(1, l, "%+4.1f", VC->MW_v0);
     skpFormatText(2, l, "%+4.1f", VC->MW_v2);
-    skpFormatText(3, l, "%3.0f%%", VC->MW_w0 * 100.0);
-    skpFormatText(4, l, "%3.0f%%", VC->MW_w2 * 100.0);
+    skpFormatText(3, l, "%3.0f%%", w0 * 100.0);
+    skpFormatText(4, l, "%3.0f%%", w2 * 100.0);
     l++;
     skpFormatText(0, l, "%s", VC->MW_desc[VC->MW_DE0+1]);
     skpFormatText(1, l, "%+4.1f", VC->MW_v1);
     skpFormatText(2, l, "%+4.1f", VC->MW_v3);
-    skpFormatText(3, l, "%3.0f%%", VC->MW_w1 * 100.0);
-    skpFormatText(4, l, "%3.0f%%", VC->MW_w3 * 100.0);
+    skpFormatText(3, l, "%3.0f%%", w1 * 100.0);
+    skpFormatText(4, l, "%3.0f%%", w3 * 100.0);
     l++;
     skpFormatText(0, l, "Out:");
     skpFormatText(1, l, "   %+.2f", VC->MW_RESP);
@@ -126,11 +138,11 @@ bool ScramAttitude::Update(oapi::Sketchpad *skp)
     skpColor(CLR_RED);
     skpFormatText(0, l++, "Mach: CHECK SLOW SPEED");
   }
-  if (VC->apState > 0 && VC->trimTgt == 1.0) {
+  if (VC->apState > 0 && (VC->trimTgt == 1.0 && VC->trim > 0.99)) {
     skpColor(CLR_YELLOW);
     skpFormatText(0, l++, "Elevator Control: AT MAX");
   }
-  if (VC->apState > 0 && VC->trimTgt == -1.0) {
+  if (VC->apState > 0 && (VC->trimTgt == -1.0 && VC->trim < -0.99)) {
     skpColor(CLR_YELLOW);
     skpFormatText(0, l++, "Elevator Control: AT MIN");
   }

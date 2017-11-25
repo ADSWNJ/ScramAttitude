@@ -53,6 +53,9 @@
 // Global variables
 
 ScramAttitude_GCore *g_SC = nullptr;    // points to the static persistence core
+char *g_moduleName = "ScramAttitude";
+char *g_moduleVersion = "1.0";
+char *g_moduleCompileDate = __DATE__;
 
 // ====================================================================================================================
 // MFD class implementation
@@ -64,6 +67,7 @@ ScramAttitude::ScramAttitude (DWORD w, DWORD h, VESSEL *vessel, UINT mfd)
   if (g_SC == nullptr) {
     g_SC = new ScramAttitude_GCore();
     GC = g_SC;
+    strcpy_s(GC->moduleName, 32, g_moduleName);
   }
   GC = g_SC;
 
@@ -106,8 +110,6 @@ void ScramAttitude::ReadStatus(FILEHANDLE scn) {
   char *key;
   int pI;
   double pD;
-  double pDA[16];
-  bool outTableValChanged{ false };
 
   while (oapiReadScenario_nextline(scn, line)) {
 
@@ -158,151 +160,19 @@ void ScramAttitude::ReadStatus(FILEHANDLE scn) {
       continue;
     }
 
-    if (!_stricmp(key, "TRIM_CTL")) {
-      if (!ParseDoubleArray(&ll, pDA, 10)) continue;
-      bool valid = true;
-      for (int i = 0; i < 10; i++) {
-        if (pDA[i] < 0.0 || pDA[i] > 10.0) valid = false;
-      }
-      if (!valid) continue;
-      for (int i = 0, j=0; i < 5; i++) {
-        VC->trim_ControlTable[i][0] = pDA[j++];
-        VC->trim_ControlTable[i][1] = pDA[j++];
-      }
-      continue;
-    }
-
-    if (!_stricmp(key, "SEG_DE_CTL")) {
-      if (!ParseDoubleArray(&ll, pDA, 16)) continue;
-      bool valid = true;
-      for (int i = 0; i < 16; i++) {
-        if (pDA[i] < -10.0 || pDA[i] > 10.0) valid = false;
-      }
-      if (!valid) continue;
-      for (int i = 0, j = 0; i < 8; i++) {
-        VC->MW_SegmentationTableDE[i].start = pDA[j++];
-        VC->MW_SegmentationTableDE[i].end = pDA[j++];
-      }
-      continue;
-    }
-
-    if (!_stricmp(key, "SEG_E_CTL")) {
-      if (!ParseDoubleArray(&ll, pDA, 16)) continue;
-      bool valid = true;
-      for (int i = 0; i < 16; i++) {
-        if (pDA[i] < -50.0 || pDA[i] > 50.0) valid = false;
-      }
-      if (!valid) continue;
-      for (int i = 0, j = 0; i < 8; i++) {
-        VC->MW_SegmentationTableE[i].start = pDA[j++];
-        VC->MW_SegmentationTableE[i].end = pDA[j++];
-      }
-      continue;
-    }
-
-    if (!_stricmp(key, "DES_VACC_CTL")) {
-      if (!ParseDoubleArray(&ll, pDA, 9)) continue;
-      bool valid = true;
-      for (int i = 0; i < 9; i++) {
-        if (pDA[i] < -50.0 || pDA[i] > 50.0) valid = false;
-      }
-      if (!valid) continue;
-      outTableValChanged = true;
-      for (int i = 0; i < 9; i++) {
-        VC->MW_DesiredVAccTable[i] = pDA[i];
-      }
-      continue;
-    }
-
   }
-  if (outTableValChanged) {
-    // Reassign the fuzzy matrix after load
-    for (int r = 0; r < 10; r++) {
-      for (int c = 0; c < 10; c++) {
-        VC->MW_ControlTable[r][c] = VC->MW_DesiredVAccTable[VC->MW_ControlStateTable[r][c] + 4];
-      }
-    }
-  }
+
   return;
   
 }
 
 void ScramAttitude::WriteStatus(FILEHANDLE scn) const {
-  char buf[256];
 
   oapiWriteScenario_float(scn, "DP_TGT", VC->DPTgt);
   oapiWriteScenario_float(scn, "VACC_TGT", VC->vAccTgt);
   oapiWriteScenario_int(scn, "AP_MODE", VC->apState);
   oapiWriteScenario_int(scn, "LOG_MODE", VC->logState);
   oapiWriteScenario_int(scn, "DIAG_MODE", VC->showDiags? 1 : 0);
-
-
-  sprintf_s(buf, 128, "%.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f",
-    VC->MW_SegmentationTableE[0].start,
-    VC->MW_SegmentationTableE[0].end,
-    VC->MW_SegmentationTableE[1].start,
-    VC->MW_SegmentationTableE[1].end,
-    VC->MW_SegmentationTableE[2].start,
-    VC->MW_SegmentationTableE[2].end,
-    VC->MW_SegmentationTableE[3].start,
-    VC->MW_SegmentationTableE[3].end,
-    VC->MW_SegmentationTableE[4].start,
-    VC->MW_SegmentationTableE[4].end,
-    VC->MW_SegmentationTableE[5].start,
-    VC->MW_SegmentationTableE[5].end,
-    VC->MW_SegmentationTableE[6].start,
-    VC->MW_SegmentationTableE[6].end,
-    VC->MW_SegmentationTableE[7].start,
-    VC->MW_SegmentationTableE[7].end
-  );
-  oapiWriteScenario_string(scn, "SEG_E_CTL", buf);
-
-  sprintf_s(buf, 128, "%.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f",
-    VC->MW_SegmentationTableDE[0].start,
-    VC->MW_SegmentationTableDE[0].end,
-    VC->MW_SegmentationTableDE[1].start,
-    VC->MW_SegmentationTableDE[1].end,
-    VC->MW_SegmentationTableDE[2].start,
-    VC->MW_SegmentationTableDE[2].end,
-    VC->MW_SegmentationTableDE[3].start,
-    VC->MW_SegmentationTableDE[3].end,
-    VC->MW_SegmentationTableDE[4].start,
-    VC->MW_SegmentationTableDE[4].end,
-    VC->MW_SegmentationTableDE[5].start,
-    VC->MW_SegmentationTableDE[5].end,
-    VC->MW_SegmentationTableDE[6].start,
-    VC->MW_SegmentationTableDE[6].end,
-    VC->MW_SegmentationTableDE[7].start,
-    VC->MW_SegmentationTableDE[7].end
-  );
-  oapiWriteScenario_string(scn, "SEG_DE_CTL", buf);
-
-  sprintf_s(buf, 128, "%.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f",
-    VC->MW_DesiredVAccTable[0],
-    VC->MW_DesiredVAccTable[1],
-    VC->MW_DesiredVAccTable[2],
-    VC->MW_DesiredVAccTable[3],
-    VC->MW_DesiredVAccTable[4],
-    VC->MW_DesiredVAccTable[5],
-    VC->MW_DesiredVAccTable[6],
-    VC->MW_DesiredVAccTable[7],
-    VC->MW_DesiredVAccTable[8]
-  );
-  oapiWriteScenario_string(scn, "DES_VACC_CTL", buf);
-
-  sprintf_s(buf, 128, "%.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f",
-    VC->trim_ControlTable[0][0],
-    VC->trim_ControlTable[0][1],
-    VC->trim_ControlTable[1][0],
-    VC->trim_ControlTable[1][1],
-    VC->trim_ControlTable[2][0],
-    VC->trim_ControlTable[2][1],
-    VC->trim_ControlTable[3][0],
-    VC->trim_ControlTable[3][1],
-    VC->trim_ControlTable[4][0],
-    VC->trim_ControlTable[4][1]
-  );
-  oapiWriteScenario_string(scn, "TRIM_CTL", buf);
 
   return;
 }
