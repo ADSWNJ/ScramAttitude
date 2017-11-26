@@ -126,53 +126,48 @@ class ScramAttitude_VCore {
       double end;
     };
     
-    struct start_end_struct MW_SegmentationTableDE[8]{  // Macvicar-Whelan Ramp Control matrix for DP Delta-Error (rate of change of DP error) 
-      { 0.40,  0.10 },  // NX to NL
-      { 0.10,  0.05 },  // NL to NM
-      { 0.05,  0.02 },  // NM to NS
-      { 0.02,  0.00 },  // NS to Z0
-      { 0.00, -0.02 },  // Z0 to PS
-      { -0.02, -0.05 }, // PS to PM
-      { -0.05, -0.10 }, // PM to PL
-      { -0.10, -0.40 }  // PL to PX 
-    };
-
     struct start_end_struct MW_SegmentationTableE[8] = {// Macvicar-Whelan Ramp Control matrix for DP Error (offset to target DP) 
-      { 15.0,  5.0 },   // NX to NL
-      { 5.0,  2.0 },    // NL to NM 
-      { 2.0,  0.5 },    // NM to NS
-      { 0.5,  0.0 },    // NS to Z0
-      { 0.0, -0.5 },    // Z0 to PS
-      { -0.5, -2.0 },   // PS to PM
-      { -2.0, -3.0 },   // PM to PL
-      { -3.0, -5.0 }    // PL to PX 
+      { 15.0,  8.0 },   // NX to NL
+      {  4.0,  1.2 },    // NL to NM 
+      {  0.8,  0.5 },    // NM to NS
+      {  0.5,  0.0 },    // NS to Z0
+      {  0.0, -0.4 },    // Z0 to PS
+      { -0.4, -0.7 },   // PS to PM
+      { -1.0, -2.0 },   // PM to PL
+      { -4.0, -5.0 }    // PL to PX 
     }; 
 
-    double MW_DesiredVAccTable[9]{                    // Macvicar-Whelan Output goal table, for Negative X, L, M, S demand, Zero demand, and Positive S, M, L, X
-       5.00,             // NX
-       3.00,             // NL
-       1.50,             // NM
-       0.50,             // NS
-       0.00,             // Z0
-      -0.50,             // PS
-      -1.50,             // PM
-      -3.00,             // PL
-      -5.00              // PX
+    struct start_end_struct MW_SegmentationTableDE[8]{  // Macvicar-Whelan Ramp Control matrix for DP Delta-Error (rate of change of DP error) 
+      {  0.40,   0.05 },  // NX to NL
+      {  0.05,   0.03 },  // NL to NM
+      {  0.03,   0.012 },  // NM to NS
+      {  0.012,  0.00 },  // NS to Z0
+      {  0.00,  -0.012 },  // Z0 to PS
+      { -0.012, -0.03 }, // PS to PM
+      { -0.03,  -0.05 }, // PM to PL
+      { -0.05,  -0.30 }  // PL to PX 
     };
-    /*double trim_ControlTable[5][2]{               // Governs the trim adjustment
-      { 0.05, 0.03 },                               // < 0.05 = 0.00%, 0.05 to 0.10 is 0.03%, etc
-      { 0.10, 0.09 },
-      { 0.20, 0.14 },
-      { 0.30, 0.18 },
-      { 0.50, 0.90 }
-    };*/
+
+
+    double MW_DesiredVAccTable[9]{                    // Macvicar-Whelan Output goal table, for Negative X, L, M, S demand, Zero demand, and Positive S, M, L, X
+      12.00,             // NX
+       5.00,             // NL
+       3.00,             // NM
+       1.50,             // NS
+       0.00,             // Z0
+      -1.50,             // PS
+      -3.00,             // PM
+      -5.00,             // PL
+     -12.00              // PX
+    };
+
 
     double trim_ControlTable[5][2]{               // Governs the trim adjustment
-      {0.05, 0.20},                               // < 0.05 = 0.20%, 0.20 to 0.30 is 0.3%, etc
-      {0.10, 0.20},                               
-      {0.20, 0.20},
-      {0.30, 0.30},
-      {0.50, 0.50}
+      {0.25, 0.10},                               // < 0.05 = 0.20%, 0.20 to 0.30 is 0.3%, etc
+      {0.60, 0.20},                               
+      {1.20, 0.40},
+      {2.50, 1.00},
+      {5.00, 4.00}
     };
 
 #define MW_NX -4

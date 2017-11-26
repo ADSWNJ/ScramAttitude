@@ -163,7 +163,7 @@ void ScramAttitude_VCore::corePreStep(double p_simT,double p_simDT,double p_mjd)
 
 void ScramAttitude_VCore::dumpMW() {
   FILE *hFile = nullptr;
-  errno_t err = fopen_s(&hFile, ".\\Config\\MFD\\ScramAttitude\\MW.csv", "w");
+  errno_t err = fopen_s(&hFile, ".\\Config\\MFD\\ScramAttitude\\ScramAttitude_MW.csv", "w");
   if (err != 0 || hFile == nullptr) return;
 
   fprintf(hFile, "E, f(E)\n");
@@ -202,9 +202,9 @@ void ScramAttitude_VCore::dumpMW() {
 
 void ScramAttitude_VCore::logOpen() {
   logState = 0;
-  errno_t err = fopen_s(&hLogFile, ".\\Config\\MFD\\ScramAttitude\\Dump.csv", "w");
+  errno_t err = fopen_s(&hLogFile, ".\\Config\\MFD\\ScramAttitude\\ScramAttitude_Dump.csv", "w");
   if (err != 0 || hLogFile == nullptr) {
-    logError(err, "trying to open .\\Config\\MFD\\ScramAttitude\\Dump.csv at MJD %.5f", mjd);
+    logError(err, "trying to open .\\Config\\MFD\\ScramAttitude\\ScramAttitude_Dump.csv at MJD %.5f", mjd);
     hLogFile = nullptr;
     return;
   }
@@ -386,10 +386,11 @@ bool ScramAttitude_VCore::GetVesselClassControlSettings() {
   bool inOurVesselClass = false;
   unsigned short foundItem{ 0 };
 
-  const char *tokList[] = { "SEG_E_CTL", "SEG_DE_CTL", "DES_VACC_CTL", "TRIM_CTL", "HIST_COUNT", "MIN_SIMD" , "BEGIN_VESSEL_CLASS", "END_VESSEL_CLASS" };
+  const char *tokList[] = { "SEG_E_CTL", "SEG_DE_CTL", "DES_VACC_CTL", "TRIM_CTL", "HIST_COUNT", "MIN_SIMD" , "DP_TGT", "BEGIN_VESSEL_CLASS", "END_VESSEL_CLASS" };
   const int itemValueCount[4] = { 16, 16, 9, 10 };
   int itemHistCount{ 0 };
   double itemMinSimD{ 0.0 };
+  int itemDPTgt{ 0 };
 
 
   const char VesselParamsFile[] = ".\\Config\\MFD\\ScramAttitude\\ScramAttitude_VesselParams.cfg";
@@ -401,7 +402,7 @@ bool ScramAttitude_VCore::GetVesselClassControlSettings() {
       lineNo++;
       bp = buf;
       if (!ParseWhiteSpace(&bp)) continue;
-      ParseStringFomList(&bp, &tokItem, tokList, 8, true);
+      ParseStringFomList(&bp, &tokItem, tokList, 9, true);
       foundItem |= 1 << tokItem;
       switch (tokItem) {
       case 0: // SEG_E_CTL
@@ -420,20 +421,24 @@ bool ScramAttitude_VCore::GetVesselClassControlSettings() {
         ParseDouble(&bp, &itemMinSimD, true);
         if (itemMinSimD < 0.0 || itemMinSimD > 2.0) throw ParseException("%s range error: must be between 0.0 and 2.0", tokList[tokItem]);
         continue;
-      case 6: // BEGIN_VESSEL_CLASS
+      case 6: // DP_TGT
+        ParseInt(&bp, &itemDPTgt, true);
+        if (itemDPTgt < 0 || itemDPTgt > 200) throw ParseException("%s range error: must be between 3 and 200", tokList[tokItem]);
+        continue;
+      case 7: // BEGIN_VESSEL_CLASS
         if (inVesselClass) throw ParseException("missing END_VESSEL_CLASS");
         inVesselClass = true;
         ParseQuotedString(&bp, &tok, true);
         if (!_stricmp(tok, clName)) inOurVesselClass = true;
         if (ParseWhiteSpace(&bp)) throw ParseException("extra data found on end of line");
         continue;
-      case 7: // END_VESSEL_CLASS
+      case 8: // END_VESSEL_CLASS
         if (ParseWhiteSpace(&bp)) throw ParseException("extra data found on end of line");
         if (!inVesselClass) throw ParseException("missing BEGIN_VESSEL_CLASS");
         if (inOurVesselClass) {
-          if (foundItem == 0xFF) {
+          if (foundItem == 0x1FF) {
             parseValid = true;
-            break; // parsed our class, and all 8 control lined found ... so now break from the file read
+            break; // parsed our class, and all 9 control lines found ... so now break from the file read
           } else {
             throw ParseException("Missing settings in vessel definition");
           }
@@ -468,6 +473,7 @@ bool ScramAttitude_VCore::GetVesselClassControlSettings() {
     }
     reqHist = itemHistCount;
     minSimD = itemMinSimD;
+    DPTgt = itemDPTgt;
 
     sprintf_s(buf, 256, "   >>> %s module loaded vessel class %s settings from %s", GC->moduleName, clName, VesselParamsFile);
     oapiWriteLog(buf);
